@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+sqlmodel
+jinja2
+python-multipart
+yfinance
+apscheduler
+requests
+python-dotenv
