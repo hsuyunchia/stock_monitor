@@ -36,28 +36,27 @@
             <form action="/schedules/add" method="post" class="row g-2">
                 <input type="hidden" name="user_id" value="{{ user.id }}">
                 <div class="col-4">
-                    <div class="col-4">
-                        <div class="form-control d-flex align-items-center px-1">
-                            <select id="hourSelect" class="form-select border-0 shadow-none text-center p-0" style="background-image: none; cursor: pointer;" required>
-                                <option value="" disabled selected>HH</option>
-                                {% for h in range(24) %}
-                                    <option value="{{ '%02d' % h }}">{{ '%02d' % h }}</option>
-                                {% endfor %}
-                            </select>
-                            
-                            <span class="fw-bold text-muted mx-1">:</span>
-                            
-                            <select id="minuteSelect" class="form-select border-0 shadow-none text-center p-0" style="background-image: none; cursor: pointer;" required>
-                                <option value="" disabled selected>MM</option>
-                                <option value="00">00</option>
-                                <option value="15">15</option>
-                                <option value="30">30</option>
-                                <option value="45">45</option>
-                            </select>
-                        </div>
+                    <div class="form-control d-flex align-items-center px-1 w-100">
                         
-                        <input type="hidden" name="check_time" id="finalTimeValue">
+                        <select id="hourSelect" class="form-select border-0 shadow-none text-center p-0 w-50" style="background-image: none; cursor: pointer;" required>
+                            <option value="" disabled selected>Hour</option>
+                            {% for h in range(24) %}
+                                <option value="{{ '%02d' % h }}">{{ '%02d' % h }}</option>
+                            {% endfor %}
+                        </select>
+                        
+                        <span class="fw-bold text-muted mx-1">:</span>
+                        
+                        <select id="minuteSelect" class="form-select border-0 shadow-none text-center p-0 w-50" style="background-image: none; cursor: pointer;" required>
+                            <option value="" disabled selected>Minute</option>
+                            <option value="00">00</option>
+                            <option value="15">15</option>
+                            <option value="30">30</option>
+                            <option value="45">45</option>
+                        </select>
                     </div>
+                    
+                    <input type="hidden" name="check_time" id="finalTimeValue">
                 </div>
                 <div class="col-5">
                     <select name="frequency" class="form-select">
