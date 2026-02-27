@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Form
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from sqlmodel import Session, select
 from database import get_session
 from models import UserSchedule
@@ -11,7 +11,6 @@ def add_schedule(
     user_id: int = Form(...), check_time: str = Form(...), 
     frequency: str = Form(...), session: Session = Depends(get_session)
 ):
-    # 1. CHECK FOR DUPLICATES (The Fix)
     existing_sched = session.exec(
         select(UserSchedule).where(
             UserSchedule.user_id == user_id,
@@ -20,16 +19,16 @@ def add_schedule(
         )
     ).first()
 
-    # 2. Add New Schedule ONLY if it doesn't exist
     if existing_sched:
-        # 加上 ?msg=dup_sched 參數
-        return RedirectResponse(url="/?msg=dup_sched", status_code=303)
-    else:
-        new_sched = UserSchedule(user_id=user_id, check_time=check_time, frequency=frequency)
-        session.add(new_sched)
-        session.commit()
-        
-    return RedirectResponse(url="/", status_code=303)
+        # 💡 發現重複，回傳 400 錯誤與訊息
+        return JSONResponse(status_code=400, content={"message": f"⚠️ {check_time} 的排程已經存在囉！"})
+
+    new_sched = UserSchedule(user_id=user_id, check_time=check_time, frequency=frequency)
+    session.add(new_sched)
+    session.commit()
+    
+    # 💡 成功，回傳 200
+    return JSONResponse(status_code=200, content={"message": "排程新增成功！"})
 
 @router.post("/delete/{sched_id}")
 def delete_schedule(sched_id: int, session: Session = Depends(get_session)):

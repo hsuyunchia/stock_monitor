@@ -20,9 +20,12 @@
     <div class="card mb-4 shadow-sm border-0">
         <div class="card-body">
             <h5 class="card-title fw-bold">⏰ 通知排程 (My Schedule)</h5>
+            
+            <div id="scheduleAlertBox" class="alert d-none text-center p-2 mb-3" role="alert"></div>
+
             <ul class="list-group list-group-flush mb-3">
                 {% for sched in schedules %}
-                <li class="list-group-item d-flex justify-content-between align-items-center">
+                <li class="list-group-item d-flex justify-content-between align-items-center px-1">
                     <span>
                         <span class="fw-bold">{{ sched.check_time }}</span>
                         <span class="badge bg-info text-dark ms-2">{{ sched.frequency }}</span>
@@ -33,34 +36,31 @@
                 </li>
                 {% endfor %}
             </ul>
-            <form action="/schedules/add" method="post" class="row g-2">
-                <input type="hidden" name="user_id" value="{{ user.id }}">
-                <div class="col-4">
-                    <div class="form-control d-flex align-items-center px-1 w-100">
-                        
-                        <select id="hourSelect" class="form-select border-0 shadow-none text-center p-0 w-50" style="background-image: none; cursor: pointer;" required>
-                            <option value="" disabled selected>Hour</option>
+            
+            <form id="addScheduleForm" class="row g-2">
+                <input type="hidden" name="user_id" value="1"> <div class="col-5">
+                    <div class="form-control p-0 d-flex align-items-center w-100 overflow-hidden">
+                        <select id="hourSelect" class="form-select border-0 shadow-none text-center px-1" style="background-image: none; cursor: pointer;" required>
+                            <option value="" disabled selected>HH</option>
                             {% for h in range(24) %}
                                 <option value="{{ '%02d' % h }}">{{ '%02d' % h }}</option>
                             {% endfor %}
                         </select>
-                        
-                        <span class="fw-bold text-muted mx-1">:</span>
-                        
-                        <select id="minuteSelect" class="form-select border-0 shadow-none text-center p-0 w-50" style="background-image: none; cursor: pointer;" required>
-                            <option value="" disabled selected>Minute</option>
+                        <span class="fw-bold text-muted">:</span>
+                        <select id="minuteSelect" class="form-select border-0 shadow-none text-center px-1" style="background-image: none; cursor: pointer;" required>
+                            <option value="" disabled selected>MM</option>
                             <option value="00">00</option>
                             <option value="15">15</option>
                             <option value="30">30</option>
                             <option value="45">45</option>
                         </select>
                     </div>
-                    
                     <input type="hidden" name="check_time" id="finalTimeValue">
                 </div>
-                <div class="col-5">
+                
+                <div class="col-4">
                     <select name="frequency" class="form-select">
-                        <option value="weekday">平日 (Weekday)</option>
+                        <option value="weekday">平日 (Weeday)</option>
                         <option value="weekend">週末 (Weekend)</option>
                         <option value="everyday">每天 (Everyday)</option>
                     </select>
@@ -73,7 +73,6 @@
     </div>
 
     <h5 class="mb-3 fw-bold">📋 監測清單 (Watchlist)</h5>
-    
     <div class="mb-3">
         <input type="text" id="searchInput" class="form-control rounded-pill" placeholder="🔍 搜尋代號或名稱 (e.g., 2330)...">
     </div>
@@ -83,7 +82,7 @@
         <div class="card-body d-flex justify-content-between align-items-center p-3">
             <div class="d-flex align-items-center">
                 <form action="/stocks/toggle/{{ item.id }}" method="post" style="margin-right: 15px;">
-                    <button class="btn btn-sm {{ 'btn-success' if item.is_active else 'btn-secondary' }} px-2 text-nowrap" style="min-width: 45px;">
+                    <button class="btn btn-sm {{ 'btn-success' if item.is_active else 'btn-secondary' }} px-1 text-nowrap" style="width: 55px;">
                         {{ 'ON' if item.is_active else 'OFF' }}
                     </button>
                 </form>
@@ -96,7 +95,7 @@
                 <div class="fw-bold {{ 'text-success' if item.condition == 'gte' else 'text-danger' }}">
                     {{ '>=' if item.condition == 'gte' else '<=' }} {{ item.target_price }}
                 </div>
-                <form action="/stocks/delete/{{ item.id }}" method="post" class="d-inline" onsubmit="return confirm('Delete?');">
+                <form action="/stocks/delete/{{ item.id }}" method="post" class="d-inline" onsubmit="return confirm('確定要刪除嗎？');">
                     <button class="btn btn-sm text-muted p-0 border-0">🗑️</button>
                 </form>
             </div>
@@ -107,23 +106,32 @@
     <div class="card mt-4 border-0 shadow-sm">
         <div class="card-body">
             <h6 class="fw-bold">➕ 新增監測 (New Alert)</h6>
-            <form action="/stocks/add" method="post">
-                <input type="hidden" name="user_id" value="{{ user.id }}">
-                <div class="row g-2">
-                    <div class="col-4">
-                        <input type="text" name="symbol" class="form-control" placeholder="2330.TW" required>
+            
+            <div id="alertBox" class="alert d-none text-center p-2 mb-3" role="alert"></div>
+
+            <form id="addStockForm" class="mb-2">
+                <input type="hidden" name="user_id" value="1">
+                <input type="hidden" name="symbol" id="realSymbolInput" required>
+                
+                <div class="row g-2 align-items-center">
+                    <div class="col-12 col-md-5 position-relative">
+                        <input type="text" id="symbolInput" class="form-control w-100" placeholder="股票代號 (如: 台積電, AAPL)" autocomplete="off" required>
+                        <ul id="searchResults" class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 1000; max-height: 200px; overflow-y: auto; top: 100%;"></ul>
                     </div>
-                    <div class="col-3">
-                        <select name="condition" class="form-select">
-                            <option value="lte">≤</option>
-                            <option value="gte">≥</option>
+
+                    <div class="col-4 col-md-3">
+                        <select name="condition" class="form-select w-100" required>
+                            <option value="gte">&gt;=</option>
+                            <option value="lte">&lt;=</option>
                         </select>
                     </div>
-                    <div class="col-3">
-                        <input type="number" step="0.01" name="target_price" class="form-control" placeholder="Price" required>
+                    
+                    <div class="col-5 col-md-2">
+                        <input type="number" name="target_price" class="form-control w-100" step="0.01" placeholder="目標價" required>
                     </div>
-                    <div class="col-2">
-                        <button type="submit" class="btn btn-primary w-100">OK</button>
+                    
+                    <div class="col-3 col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">Add</button>
                     </div>
                 </div>
             </form>
@@ -133,11 +141,9 @@
     <div class="text-center mt-4 text-muted small">
         報價可能延遲 15 分鐘 | Designed for MVP
     </div>
-
 </div>
 
 <script>
-// Market Status Logic
 const markets = [
     { name: '🇹🇼 台股 (TWSE)', tz: 'Asia/Taipei', open: '09:00', close: '13:30' },
     { name: '🇺🇸 美股 (NYSE)', tz: 'America/New_York', open: '09:30', close: '16:00' },
@@ -146,13 +152,12 @@ const markets = [
 
 function updateMarkets() {
     const container = document.getElementById('market-status-container');
+    if(!container) return;
     container.innerHTML = '';
     
     markets.forEach(m => {
         const now = new Date();
-        // Time
         const timeStr = new Intl.DateTimeFormat('en-US', { timeZone: m.tz, hour12: false, hour:'2-digit', minute:'2-digit' }).format(now);
-        // Weekday
         const dayStr = new Intl.DateTimeFormat('en-US', { timeZone: m.tz, weekday: 'short' }).format(now);
         const isWeekend = (dayStr === 'Sat' || dayStr === 'Sun');
         
@@ -174,66 +179,140 @@ function updateMarkets() {
 setInterval(updateMarkets, 1000);
 updateMarkets();
 </script>
-<script>
-// Intercept the Schedule Form Submission
-document.querySelector('form[action="/schedules/add"]').addEventListener('submit', function(e) {
-    const timeInput = this.querySelector('input[name="check_time"]').value;
-    if (timeInput) {
-        const minutes = parseInt(timeInput.split(':')[1]);
-        if (minutes % 15 !== 0) {
-            e.preventDefault(); // Stop form submission
-            alert("Please select a time in 15-minute increments (e.g., 00, 15, 30, 45).");
-        }
-    }
-});
-</script>
-<script>
-// Handle form submission and combine HH and MM
-document.querySelector('form[action="/schedules/add"]').addEventListener('submit', function(e) {
-    const hh = document.getElementById('hourSelect').value;
-    const mm = document.getElementById('minuteSelect').value;
-    
-    // Check if both hour and minute are selected
-    if (hh && mm !== "") {
-        document.getElementById('finalTimeValue').value = hh + ':' + mm;
-    } else {
-        e.preventDefault();
-        alert("Please select a valid time.");
-    }
-});
-</script>
-<script>
-// 💡 新增 1：攔截 URL 的錯誤訊息並跳出提示
-window.addEventListener('DOMContentLoaded', (event) => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('msg') === 'dup_sched') {
-        alert("⚠️ 您已經設定過這個排程時間囉！");
-    } else if (urlParams.get('msg') === 'dup_stock') {
-        alert("⚠️ 您的清單中已經有完全相同的監測條件！");
-    }
-    
-    // 提示完後，把網址列的 ?msg=... 清掉，保持網址乾淨
-    if (urlParams.has('msg')) {
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
-});
 
-// 💡 新增 2：監測清單的即時搜尋過濾器 (Filter)
-document.getElementById('searchInput').addEventListener('keyup', function() {
-    const filterText = this.value.toUpperCase();
-    // 抓取所有的股票卡片
-    const cards = document.querySelectorAll('.card-stock');
+<script>
+document.addEventListener('DOMContentLoaded', () => {
     
-    cards.forEach(card => {
-        // 取得卡片內的文字 (包含名稱和代號)
-        const cardText = card.textContent || card.innerText;
-        // 如果文字包含搜尋字串，就顯示，否則隱藏
-        if (cardText.toUpperCase().indexOf(filterText) > -1) {
-            card.style.display = "";
-        } else {
-            card.style.display = "none";
-        }
-    });
+    // --- 搜尋過濾器 ---
+    const searchInput = document.getElementById('searchInput');
+    if(searchInput) {
+        searchInput.addEventListener('keyup', function() {
+            const filterText = this.value.toUpperCase();
+            const cards = document.querySelectorAll('.card-stock');
+            cards.forEach(card => {
+                const cardText = card.textContent || card.innerText;
+                card.style.display = cardText.toUpperCase().indexOf(filterText) > -1 ? "" : "none";
+            });
+        });
+    }
+
+    // --- 股票監測 (Watchlist) ---
+    const stockForm = document.getElementById('addStockForm');
+    const symbolInput = document.getElementById('symbolInput');
+    const realSymbolInput = document.getElementById('realSymbolInput');
+    const searchResults = document.getElementById('searchResults');
+    const alertBox = document.getElementById('alertBox');
+
+    let searchTimeout = null;
+    if(symbolInput) {
+        symbolInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const query = this.value.trim();
+            if (query.length < 2) {
+                searchResults.classList.add('d-none');
+                return;
+            }
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/stocks/search?q=${query}`);
+                    const data = await response.json();
+                    searchResults.innerHTML = '';
+                    if (data && data.length > 0) {
+                        data.forEach(item => {
+                            const li = document.createElement('li');
+                            li.className = 'list-group-item list-group-item-action cursor-pointer';
+                            li.innerHTML = `<strong>${item.symbol}</strong> <span class="text-muted fs-6">${item.name}</span>`;
+                            li.onclick = () => {
+                                symbolInput.value = item.symbol;
+                                realSymbolInput.value = item.symbol;
+                                searchResults.classList.add('d-none');
+                            };
+                            searchResults.appendChild(li);
+                        });
+                        searchResults.classList.remove('d-none');
+                    }
+                } catch (err) {
+                    console.error("搜尋 API 錯誤:", err);
+                }
+            }, 300);
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!symbolInput.contains(e.target) && !searchResults.contains(e.target)) {
+                searchResults.classList.add('d-none');
+            }
+        });
+    }
+
+    if(stockForm) {
+        stockForm.addEventListener('submit', async function(e) {
+            e.preventDefault(); 
+            if (!realSymbolInput.value) realSymbolInput.value = symbolInput.value.toUpperCase(); 
+            
+            const formData = new FormData(this);
+            alertBox.className = 'alert text-center p-2 mb-3 alert-info';
+            alertBox.textContent = "處理中...";
+            
+            try {
+                const response = await fetch('/stocks/add', { method: 'POST', body: formData });
+                const result = await response.json();
+                if (response.ok) {
+                    alertBox.className = 'alert text-center p-2 mb-3 alert-success';
+                    alertBox.textContent = result.message || "新增成功！";
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    alertBox.className = 'alert text-center p-2 mb-3 alert-danger';
+                    alertBox.textContent = result.message || JSON.stringify(result.detail) || "發生錯誤";
+                }
+            } catch (error) {
+                alertBox.className = 'alert text-center p-2 mb-3 alert-danger';
+                alertBox.textContent = "系統連線異常，請稍後再試。";
+            }
+        });
+    }
+
+    // --- 排程 (Schedule) ---
+    const scheduleForm = document.getElementById('addScheduleForm');
+    const scheduleAlertBox = document.getElementById('scheduleAlertBox');
+    const finalTimeValue = document.getElementById('finalTimeValue');
+
+    if(scheduleForm) {
+        scheduleForm.addEventListener('submit', async function(e) {
+            e.preventDefault(); 
+            
+            const hh = document.getElementById('hourSelect').value;
+            const mm = document.getElementById('minuteSelect').value;
+            
+            if (hh && mm) {
+                finalTimeValue.value = hh + ':' + mm;
+            } else {
+                scheduleAlertBox.className = 'alert text-center p-2 mb-3 alert-danger';
+                scheduleAlertBox.textContent = "請完整選擇時與分。";
+                return;
+            }
+
+            const formData = new FormData(this);
+            scheduleAlertBox.className = 'alert text-center p-2 mb-3 alert-info';
+            scheduleAlertBox.textContent = "處理中...";
+            
+            try {
+                const response = await fetch('/schedules/add', { method: 'POST', body: formData });
+                const result = await response.json();
+                
+                if (response.ok) {
+                    scheduleAlertBox.className = 'alert text-center p-2 mb-3 alert-success';
+                    scheduleAlertBox.textContent = result.message || "排程新增成功！";
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    scheduleAlertBox.className = 'alert text-center p-2 mb-3 alert-danger';
+                    scheduleAlertBox.textContent = result.message || JSON.stringify(result.detail) || "發生錯誤";
+                }
+            } catch (error) {
+                scheduleAlertBox.className = 'alert text-center p-2 mb-3 alert-danger';
+                scheduleAlertBox.textContent = "系統連線異常，請稍後再試。";
+            }
+        });
+    }
 });
 </script>
 </body>
