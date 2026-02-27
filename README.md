@@ -1,6 +1,27 @@
 # Stock Monitor 📈
 
-A FastAPI-based stock price monitoring application that tracks stock prices and sends email notifications when target prices are reached.
+> **Never miss a stock price target again!** 
+> 
+> Stock Monitor is an intelligent web application that automatically tracks stock prices and sends you email notifications when your target prices are reached. Perfect for investors who want to monitor multiple stocks without constantly checking the market.
+
+## 🌟 What Can You Do?
+
+- ✅ Monitor multiple stocks simultaneously
+- ✅ Set price targets with flexible conditions (above/below)
+- ✅ Receive automated email alerts when targets are hit
+- ✅ Schedule checks on weekdays, weekends, or every day
+- ✅ Toggle monitoring on/off without deleting your watchlist
+- ✅ View real-time market status for major exchanges (Taiwan, US, Japan)
+- ✅ Track stocks across different markets and currencies
+
+**Currently tracking:** Taiwan Stock Exchange (TWSE), US Stock Exchange (NYSE), Japan Stock Exchange (TSE)
+
+## 🎯 Quick Example
+
+**Scenario:** You want to buy Apple stock when it drops below $180
+1. Add AAPL with target price ≤ $180
+2. Set daily check at 09:15 AM
+3. When AAPL hits $180 or below → Get an email alert immediately! 📧
 
 ## Features ✨
 
@@ -88,6 +109,28 @@ stock_monitor/
 6. **Access the dashboard**
    Open your browser and navigate to: `http://localhost:8000`
 
+## ⚡ Quick Start (5 Minutes)
+
+1. **Complete the installation steps above** (takes ~2 minutes)
+
+2. **Add your first stock:**
+   - Open dashboard at `http://localhost:8000`
+   - Enter stock symbol (e.g., `AAPL` or `2330.TW`)
+   - Set target price and condition (≥ or ≤)
+   - Click "OK"
+
+3. **Set up a schedule:**
+   - Click "⏰ My Schedule" section
+   - Choose time (e.g., 09:15)
+   - Select frequency (Weekday/Weekend/Everyday)
+   - Click "Add"
+
+4. **Wait for the magic:**
+   - Scheduler checks every 15 minutes (00, 15, 30, 45)
+   - When your stock hits the target → Email alert! 🎉
+
+**That's it!** You now have automated stock monitoring running 24/7
+
 ## Usage 📝
 
 ### Adding a Stock to Monitor
@@ -114,38 +157,82 @@ The scheduler runs in the background and checks active watchlist items at specif
 3. Sends an email summary if any alerts are triggered
 4. Email contains stock names, current prices, and your target prices
 
+## How It Works 🔄
+
+Here's the complete flow when a price target is hit:
+
+```
+[Scheduler Check at 09:15]
+    ↓
+[Match Time & Frequency]
+    ├─ Check if time = 09:15 ✅
+    ├─ Check if day type matches (weekday/weekend/everyday) ✅
+    └─ If both match → Continue
+    ↓
+[Load Watchlist]
+    ├─ Get all active stocks for user ✅
+    └─ Prepare symbols for price check
+    ↓
+[Fetch Live Prices]
+    ├─ Query Yahoo Finance API for latest prices ✅
+    └─ Get AAPL: $180.50, GOOGL: $140.25, etc.
+    ↓
+[Check Conditions]
+    ├─ AAPL $180.50 >= $180.00? ✅ HIT!
+    ├─ GOOGL $140.25 <= $135.00? ❌ No Hit
+    └─ Collect all hits
+    ↓
+[Send Email] 📧
+    ├─ Group hits by user
+    └─ Send summary email with table of triggers
+    
+    Email Preview:
+    ┌─────────────────────────────────┐
+    │  🔔 Stock Monitor: 2 Alerts Hit  │
+    │  ─────────────────────────────  │
+    │  AAPL    | $180.50 | ≥ $180.00  │
+    │  2330.TW | $450.00 | ≤ $450.00  │
+    └─────────────────────────────────┘
+```
+
 ## Models 🗄️
 
-### User
+The application uses 4 main data models:
+
+### **User** 👤
+Who is monitoring stocks (currently defaults to demo user)
 ```python
 - id: int (primary key)
-- email: str (unique)
-- password: str
+- email: str (unique) - Where alerts are sent
+- password: str - Authentication (MVP simplified)
 ```
 
-### Watchlist
+### **Watchlist** 👁️
+Individual stocks you want to monitor with your target rules
 ```python
 - id: int (primary key)
-- user_id: int (foreign key)
-- symbol: str (stock ticker)
-- target_price: float
-- condition: str ("gte" or "lte")
-- is_active: bool
+- user_id: int - Which user owns this watchlist
+- symbol: str - Stock ticker (AAPL, 2330.TW, etc.)
+- target_price: float - Your price target
+- condition: str - "gte" (≥) or "lte" (≤)
+- is_active: bool - ON/OFF toggle (true = monitoring active)
 ```
 
-### UserSchedule
+### **UserSchedule** ⏰
+When you want the scheduler to check your watchlist
 ```python
 - id: int (primary key)
-- user_id: int (foreign key)
-- check_time: str (e.g., "09:15")
-- frequency: str ("weekday", "weekend", "everyday")
+- user_id: int - Which user has this schedule
+- check_time: str - Time to check (HH:MM format, e.g., "09:15")
+- frequency: str - "weekday", "weekend", or "everyday"
 ```
 
-### StockMeta
+### **StockMeta** 📊
+Stock metadata (name, currency) fetched from Yahoo Finance
 ```python
-- symbol: str (primary key)
-- name: str (company name)
-- currency: str
+- symbol: str (primary key) - Stock ticker
+- name: str - Company name
+- currency: str - Currency (USD, TWD, etc.)
 ```
 
 ## API Endpoints 🔌
@@ -231,24 +318,143 @@ The scheduler provides comprehensive logging in the terminal to help you underst
 
 ## Troubleshooting 🐛
 
-**Email not being sent?**
-- Verify SMTP credentials in `.env`
-- Check that less secure app access is enabled (for Gmail)
-- Ensure `.env` file exists in the project root
+### ❌ Email not being sent?
 
-**Scheduler not running?**
-- Check that the application is still running
-- Verify check times are set correctly
-- Look at console logs for APScheduler messages
+**Check these steps:**
 
-**Database errors?**
-- Delete `stock_monitor.db` to reset the database
-- Restart the application to reinitialize tables
+1. **Verify `.env` file exists** in the project root
+   ```bash
+   cat .env  # Should show SMTP_USER and SMTP_PASSWORD
+   ```
+
+2. **Verify SMTP credentials** are correct
+   - For Gmail: Use an [App Password](https://support.google.com/accounts/answer/185833), NOT your regular password
+   - Enable "Less secure app access" if not using App Password
+
+3. **Check application is running**
+   ```bash
+   # In terminal, you should see:
+   # INFO:     Uvicorn running on http://127.0.0.1:8000
+   ```
+
+4. **Look for error messages** in the terminal output
+   ```
+   ❌ Email failed: [SSL: CERTIFICATE_VERIFY_FAILED]
+   ```
+
+### ⏰ Scheduler not running or not triggering?
+
+1. **Confirm scheduler started** when you launched the app
+   - Look for: `INFO:     Application startup complete`
+
+2. **Check your schedule time format**
+   - Must be HH:MM with 15-minute intervals: `00, 15, 30, 45`
+   - Example: ✅ `09:15`, ❌ `09:10`
+
+3. **Verify stocks are marked as ACTIVE**
+   - Go to dashboard and check if "ON" button is showing
+   - Click toggle to turn monitoring ON
+
+4. **Monitor the terminal output** for scheduler logs
+   - Every 15 mins you should see: `🚀 SCHEDULER WOKE UP AT: HH:MM`
+
+5. **Test with a manual price check**
+   - Add a stock with current price as target
+   - Wait until scheduler runs
+   - You should see a "HIT!" message in terminal
+
+### 🗄️ Database errors?
+
+1. **Reset the database completely**
+   ```bash
+   rm stock_monitor.db
+   ```
+
+2. **Restart the application**
+   - Stop: Press `Ctrl+C` in terminal
+   - Start: `uvicorn main:app --reload`
+   - This auto-creates a fresh database
+
+3. **Check database connection**
+   ```bash
+   # Verify the DATABASE_URL in .env is correct
+   cat .env | grep DATABASE_URL
+   ```
+
+### 🔍 Still not working? Enable Debug Mode
+
+Check the terminal output for detailed messages:
+
+```
+--- 🚀 SCHEDULER WOKE UP AT: 09:15 ---
+👀 DB Dump (All Schedules): [('09:15', 'weekday', 1)]
+✅ PASS: Found matching schedules for User IDs: [1]
+✅ PASS: Found 3 active watchlists. Fetching prices now...
+```
+
+Each emoji tells you where the flow stopped:
+- 🚀 = Scheduler started
+- 👀 = Showing database content
+- ✅ = Step passed successfully  
+- 🛑 = Process aborted
+- ❌ = Error occurred
+
+If you see `🛑 ABORT:` messages, that's your issue!
 
 ## License 📄
 
 This project is provided as-is for personal use.
 
+## Contributing 🤝
+
+Want to improve Stock Monitor? Contributions are welcome!
+
+**Areas we need help with:**
+- User authentication system
+- Support for more markets (Hong Kong, Singapore, etc.)
+- Database migrations & schema improvements
+- UI/UX enhancements
+- Additional notification methods (SMS, LINE, Telegram)
+- Performance optimizations
+
+**How to contribute:**
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## Support 💬
+
+**Having issues?**
+- Check the [Troubleshooting](#troubleshooting-) section above
+- Review [Terminal Output & Debugging](#terminal-output--debugging-) for detailed logs
+- Open an issue on GitHub with:
+  - What you expected to happen
+  - What actually happened
+  - Terminal output/error messages
+  - Your OS and Python version
+
+**Questions or suggestions?**
+- Open a GitHub Discussion
+- Check existing issues to see if someone asked the same thing
+
+## Roadmap 🗺️
+
+See [Future Enhancements](#future-enhancements-) for planned features.
+
+**Current Status:** MVP (Minimum Viable Product)
+- Core functionality: ✅ Working
+- Production-ready: ⚠️ Not yet (auth system needed)
+- Actively maintained: ✅ Yes
+
 ## Contact 💬
 
-For issues or questions, please reach out or open an issue on the repository.
+For questions or feedback, please reach out through:
+- GitHub Issues
+- GitHub Discussions
+- Direct message on GitHub
+
+---
+
+**Happy stock monitoring! 📊** If Stock Monitor helped you, please star ⭐ the repository!
