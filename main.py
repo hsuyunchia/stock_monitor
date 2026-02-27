@@ -39,13 +39,20 @@ def dashboard(request: Request, user_id: int = 1, session: Session = Depends(get
         select(Watchlist, StockMeta)
         .join(StockMeta, Watchlist.symbol == StockMeta.symbol)
         .where(Watchlist.user_id == user_id)
+        .order_by(
+            Watchlist.symbol, 
+            Watchlist.target_price
+        )
     ).all()
 
     # 2. 取得排程設定
     schedules = session.exec(
         select(UserSchedule)
         .where(UserSchedule.user_id == user_id)
-        .order_by(UserSchedule.check_time) # <--- 加上這行進行時間排序
+        .order_by(
+            UserSchedule.check_time, 
+            UserSchedule.frequency
+        )
     ).all()
 
     return templates.TemplateResponse("dashboard.html", {
