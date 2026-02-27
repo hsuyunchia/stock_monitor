@@ -20,7 +20,7 @@ def fetch_current_prices(symbols: list) -> dict:
                 price = historical_data['Close'].iloc[-1]
                 
                 prices[symbol] = round(float(price), 2)
-                print(f"✅ API 抓取成功 (無懼休市): {symbol} = {prices[symbol]}")
+                print(f"✅ API 抓取成功: {symbol} = {prices[symbol]}")
             else:
                 # 只有在過去一個月「完全沒有」交易紀錄時才會觸發
                 print(f"⚠️ API 回傳空資料，可能該股票已下市或代號錯誤: {symbol}")

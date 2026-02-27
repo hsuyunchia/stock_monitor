@@ -42,7 +42,11 @@ def dashboard(request: Request, user_id: int = 1, session: Session = Depends(get
     ).all()
 
     # 2. 取得排程設定
-    schedules = session.exec(select(UserSchedule).where(UserSchedule.user_id == user_id)).all()
+    schedules = session.exec(
+        select(UserSchedule)
+        .where(UserSchedule.user_id == user_id)
+        .order_by(UserSchedule.check_time) # <--- 加上這行進行時間排序
+    ).all()
 
     return templates.TemplateResponse("dashboard.html", {
         "request": request, 
