@@ -10,6 +10,11 @@ A FastAPI-based stock price monitoring application that tracks stock prices and 
 - **Flexible Scheduling**: Configure monitoring frequency (weekdays, weekends, or everyday)
 - **Web Dashboard**: User-friendly dashboard to manage your watchlist and schedules
 - **Persistent Storage**: SQLite database to store users, stocks, and monitoring rules
+- **Duplicate Prevention**: Prevents duplicate watchlist entries and schedules
+- **Toggle Monitoring**: Turn stocks on/off without deleting them
+- **Timezone Support**: Asia/Taipei timezone for accurate scheduling
+- **Debug Logging**: Comprehensive terminal output for debugging and monitoring
+- **Sorted Schedules**: Schedules displayed in chronological order on dashboard
 
 ## Tech Stack 🛠️
 
@@ -146,12 +151,13 @@ The scheduler runs in the background and checks active watchlist items at specif
 ## API Endpoints 🔌
 
 ### Stock Management
-- `POST /stocks/add` - Add a stock to watchlist
+- `POST /stocks/add` - Add a stock to watchlist (with duplicate prevention)
 - `POST /stocks/delete/{item_id}` - Remove a stock from watchlist
+- `POST /stocks/toggle/{item_id}` - Toggle stock monitoring on/off
 
 ### Schedule Management
-- `POST /schedules/update` - Update monitoring schedule
-- `GET /schedules/list` - Get user's schedules
+- `POST /schedules/add` - Add monitoring schedule (with duplicate prevention)
+- `POST /schedules/delete/{sched_id}` - Remove a schedule
 
 ### Dashboard
 - `GET /` - Main dashboard UI
@@ -164,22 +170,64 @@ The scheduler runs in the background and checks active watchlist items at specif
 | `SMTP_PASSWORD` | Email password or app password | Yes |
 | `DATABASE_URL` | Database connection string | No (defaults to SQLite) |
 
+## Terminal Output & Debugging 🖥️
+
+The scheduler provides comprehensive logging in the terminal to help you understand what's happening:
+
+### Successful Flow Example
+```
+--- 🚀 SCHEDULER WOKE UP AT: 09:15 ---
+👀 DB Dump (All Schedules): [('09:15', 'weekday', 1), ('10:30', 'everyday', 1)]
+✅ PASS: Found matching schedules for User IDs: [1]
+✅ PASS: Found 3 active watchlists. Fetching prices now...
+📈 API Result: {'AAPL': 180.50, 'GOOGL': 140.25, '2330.TW': 450.00}
+🎯 HIT! AAPL current (180.50) vs target (>= 180.00)
+💤 No Hit: GOOGL current (140.25) vs target (<= 135.00)
+🎯 HIT! 2330.TW current (450.00) vs target (<= 450.00)
+📧 Sending email to User 1 (demo@example.com)...
+✅ Email sent to demo@example.com
+```
+
+### What Each Message Means
+
+| Message | Status | Meaning |
+|---------|--------|---------|
+| `🚀 SCHEDULER WOKE UP AT: HH:MM` | ℹ️ Info | Scheduler is checking conditions |
+| `👀 DB Dump (All Schedules): [...]` | 🔍 Debug | Shows all schedules in database |
+| `✅ PASS: Found matching schedules` | ✅ Success | Time & frequency conditions matched |
+| `✅ PASS: Found N active watchlists` | ✅ Success | Active stocks found to monitor |
+| `📈 API Result: {...}` | 📊 Data | Stock prices fetched successfully |
+| `🎯 HIT! SYMBOL current (X) vs target (OP Y)` | 🎯 Alert | Stock price met target condition |
+| `💤 No Hit: SYMBOL...` | 💤 Info | Stock price didn't meet target |
+| `📧 Sending email to User X...` | 📨 Action | Email is being sent |
+| `✅ Email sent to user@example.com` | ✅ Success | Email sent successfully |
+| `🛑 ABORT: No schedules matched` | ⚠️ Warning | No active schedules at this time |
+| `⚠️ Missing price for SYMBOL` | ⚠️ Warning | Stock price couldn't be fetched |
+| `❌ Email failed: <error>` | ❌ Error | SMTP error occurred |
+
 ## Notes 📌
 
 - **MVP Version**: Currently uses a default user (id=1) for demonstration
 - **Security**: Password storage is simplified for MVP; use bcrypt for production
 - **Stock Data**: Real-time data sourced from Yahoo Finance via yfinance
-- **Timezone**: Adjust scheduler times based on your system timezone
+- **Timezone**: Uses Asia/Taipei timezone for scheduler consistency
+- **Duplicate Prevention**: Both watchlist items and schedules check for duplicates before adding
+- **Toggle vs Delete**: Use toggle (ON/OFF button) to temporarily pause monitoring, delete to remove completely
 
 ## Future Enhancements 🎯
 
-- [ ] User authentication & login system
+- [ ] User authentication & login system (replace hardcoded demo user)
 - [ ] Multiple users with proper session management
+- [ ] Support for stock symbols without `.TW` suffix (auto-detection)
+- [ ] Display Chinese company names in dashboard & emails
+- [ ] Prevent duplicate alert messages in the same email
+- [ ] LINE notification support (in addition to email)
+- [ ] Holiday/vacation mode - pause all monitoring for X days
 - [ ] Portfolio tracking & performance analytics
-- [ ] SMS notifications support
 - [ ] Stock price history & charts
 - [ ] Advanced filtering & sorting options
 - [ ] Rate limiting for API calls
+- [ ] SMS notifications support
 
 ## Troubleshooting 🐛
 
