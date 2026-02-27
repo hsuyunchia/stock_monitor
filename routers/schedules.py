@@ -21,7 +21,10 @@ def add_schedule(
     ).first()
 
     # 2. Add New Schedule ONLY if it doesn't exist
-    if not existing_sched:
+    if existing_sched:
+        # 加上 ?msg=dup_sched 參數
+        return RedirectResponse(url="/?msg=dup_sched", status_code=303)
+    else:
         new_sched = UserSchedule(user_id=user_id, check_time=check_time, frequency=frequency)
         session.add(new_sched)
         session.commit()

@@ -34,7 +34,10 @@ def add_stock(
     ).first()
     
     # 3. Add New Rule ONLY if it doesn't exist
-    if not existing_rule:
+    if existing_rule:
+        # 加上 ?msg=dup_stock 參數
+        return RedirectResponse(url="/?msg=dup_stock", status_code=303)
+    else:
         new_watch = Watchlist(
             user_id=user_id, symbol=clean_symbol, 
             target_price=target_price, condition=condition

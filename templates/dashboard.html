@@ -74,12 +74,16 @@
 
     <h5 class="mb-3 fw-bold">📋 監測清單 (Watchlist)</h5>
     
+    <div class="mb-3">
+        <input type="text" id="searchInput" class="form-control rounded-pill" placeholder="🔍 搜尋代號或名稱 (e.g., 2330)...">
+    </div>
+    
     {% for item, meta in watchlist %}
     <div class="card card-stock mb-2 border-0 shadow-sm">
         <div class="card-body d-flex justify-content-between align-items-center p-3">
             <div class="d-flex align-items-center">
                 <form action="/stocks/toggle/{{ item.id }}" method="post" style="margin-right: 15px;">
-                    <button class="btn btn-sm {{ 'btn-success' if item.is_active else 'btn-secondary' }}" style="width: 40px;">
+                    <button class="btn btn-sm {{ 'btn-success' if item.is_active else 'btn-secondary' }} px-2 text-nowrap" style="min-width: 45px;">
                         {{ 'ON' if item.is_active else 'OFF' }}
                     </button>
                 </form>
@@ -196,6 +200,40 @@ document.querySelector('form[action="/schedules/add"]').addEventListener('submit
         e.preventDefault();
         alert("Please select a valid time.");
     }
+});
+</script>
+<script>
+// 💡 新增 1：攔截 URL 的錯誤訊息並跳出提示
+window.addEventListener('DOMContentLoaded', (event) => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('msg') === 'dup_sched') {
+        alert("⚠️ 您已經設定過這個排程時間囉！");
+    } else if (urlParams.get('msg') === 'dup_stock') {
+        alert("⚠️ 您的清單中已經有完全相同的監測條件！");
+    }
+    
+    // 提示完後，把網址列的 ?msg=... 清掉，保持網址乾淨
+    if (urlParams.has('msg')) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+});
+
+// 💡 新增 2：監測清單的即時搜尋過濾器 (Filter)
+document.getElementById('searchInput').addEventListener('keyup', function() {
+    const filterText = this.value.toUpperCase();
+    // 抓取所有的股票卡片
+    const cards = document.querySelectorAll('.card-stock');
+    
+    cards.forEach(card => {
+        // 取得卡片內的文字 (包含名稱和代號)
+        const cardText = card.textContent || card.innerText;
+        // 如果文字包含搜尋字串，就顯示，否則隱藏
+        if (cardText.toUpperCase().indexOf(filterText) > -1) {
+            card.style.display = "";
+        } else {
+            card.style.display = "none";
+        }
+    });
 });
 </script>
 </body>
