@@ -52,17 +52,18 @@
             </ul>
             
             <form id="addScheduleForm" class="row g-2">
-                <input type="hidden" name="user_id" value="{{ user_id }}"> 
+                <input type="hidden" name="user_id" value="{{ user_id }}">
+                
                 <div class="col-5">
                     <div class="form-control p-0 d-flex align-items-center w-100 overflow-hidden">
-                        <select id="hourSelect" class="form-select border-0 shadow-none text-center px-1" style="background-image: none; cursor: pointer;" required>
+                        <select id="hourSelect" class="form-select border-0 shadow-none text-center px-1" required>
                             <option value="" disabled selected>HH</option>
                             {% for h in range(24) %}
                                 <option value="{{ '%02d' % h }}">{{ '%02d' % h }}</option>
                             {% endfor %}
                         </select>
                         <span class="fw-bold text-muted">:</span>
-                        <select id="minuteSelect" class="form-select border-0 shadow-none text-center px-1" style="background-image: none; cursor: pointer;" required>
+                        <select id="minuteSelect" class="form-select border-0 shadow-none text-center px-1" required>
                             <option value="" disabled selected>MM</option>
                             <option value="00">00</option>
                             <option value="15">15</option>
@@ -75,8 +76,8 @@
                 
                 <div class="col-4">
                     <select name="frequency" class="form-select">
-                        <option value="weekday">平日 (Weeday)</option>
-                        <option value="weekend">週末 (Weekend)</option>
+                        <option value="weekday">平日 (Weekdays)</option>
+                        <option value="weekend">週末 (Weekends)</option>
                         <option value="everyday">每天 (Everyday)</option>
                     </select>
                 </div>
@@ -263,6 +264,12 @@ document.addEventListener('DOMContentLoaded', () => {
         stockForm.addEventListener('submit', async function(e) {
             e.preventDefault(); 
             if (!realSymbolInput.value) realSymbolInput.value = symbolInput.value.toUpperCase(); 
+
+            // const hh = document.getElementById('hourSelect').value;
+            // const mm = document.getElementById('minuteSelect').value;
+            
+            // // 💡 關鍵：必須先填入這個隱藏 input，FormData 才會抓到它
+            // document.getElementById('finalTimeValue').value = hh + ':' + mm;
             
             const formData = new FormData(this);
             alertBox.className = 'alert text-center p-2 mb-3 alert-info';

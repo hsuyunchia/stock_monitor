@@ -1,14 +1,16 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, Depends, Form
+from fastapi import FastAPI, Request, Depends, Form, HTTPException
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from sqlmodel import Session, select
 from database import create_db_and_tables, get_session
 from services.scheduler import start_scheduler
 from services.auth import SECRET_KEY, ALGORITHM 
 from routers import stocks, schedules, auth
 from models import User, Watchlist, UserSchedule, StockMeta
+from starlette.middleware.base import BaseHTTPMiddleware
 import jwt
+import re
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -16,10 +18,45 @@ async def lifespan(app: FastAPI):
     start_scheduler()
     yield
 
+class SecurityFilterMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if request.method == "POST":
+            # 💡 檢查是否為表單格式，避免誤傷其他類型的請求
+            content_type = request.headers.get("content-type", "")
+            if "application/x-www-form-urlencoded" in content_type or "multipart/form-data" in content_type:
+                
+                # 1. 讀取並快取 Body
+                body = await request.body()
+                
+                # 2. 為了檢查，將 Body 轉成表單物件
+                from starlette.datastructures import FormData
+                # 這裡模擬讀取過程而不消耗原本的 request 流
+                import urllib.parse
+                form_dict = urllib.parse.parse_qs(body.decode())
+                
+                malicious_pattern = r"(\$\{jndi:|ldap:\/\/|script>|<script)"
+                
+                for key, values in form_dict.items():
+                    for value in values:
+                        if re.search(malicious_pattern, value, re.IGNORECASE):
+                            return JSONResponse(
+                                status_code=400,
+                                content={"message": f"檢測到不安全的字元輸入 ({key})"}
+                            )
+                
+                # 3. 💡 關鍵：重寫 request 的 receive 函數，讓後續的 Form(...) 能重新讀取 body
+                async def receive():
+                    return {"type": "http.request", "body": body}
+                request._receive = receive
+
+        response = await call_next(request)
+        return response
+
 app = FastAPI(lifespan=lifespan)
+app.add_middleware(SecurityFilterMiddleware)
+app.include_router(auth.router)
 app.include_router(stocks.router)
 app.include_router(schedules.router)
-app.include_router(auth.router)
 
 templates = Jinja2Templates(directory="templates")
 
