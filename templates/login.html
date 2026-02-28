@@ -23,10 +23,17 @@
                 <label class="form-label text-muted small">Email 信箱</label>
                 <input type="email" name="email" class="form-control form-control-lg bg-light border-0" required>
             </div>
+            
             <div class="mb-4">
                 <label class="form-label text-muted small">密碼</label>
-                <input type="password" name="password" class="form-control form-control-lg bg-light border-0" required>
+                <input type="password" name="password" id="mainPassword" class="form-control form-control-lg bg-light border-0" placeholder="輸入密碼" required>
             </div>
+
+            <div class="mb-4" id="confirmPasswordGroup" style="display: none;">
+                <label class="form-label text-muted small">確認密碼</label>
+                <input type="password" id="confirmPassword" class="form-control form-control-lg bg-light border-0" placeholder="再次輸入密碼">
+            </div>
+            
             <button type="submit" class="btn btn-primary btn-lg w-100 mb-3" id="submitBtn">登入</button>
         </form>
 
@@ -48,15 +55,45 @@
     toggleBtn.addEventListener('click', (e) => {
         e.preventDefault();
         isLogin = !isLogin;
-        title.innerHTML = isLogin ? "👋 歡迎回來" : "🚀 建立新帳號";
-        submitBtn.innerHTML = isLogin ? "登入" : "註冊";
-        toggleBtn.innerHTML = isLogin ? "還沒有帳號嗎？點此註冊" : "已經有帳號了？點此登入";
+        
+        const confirmGroup = document.getElementById('confirmPasswordGroup');
+        const confirmInput = document.getElementById('confirmPassword');
+
+        if (isLogin) {
+            title.textContent = '👋 歡迎回來';
+            submitBtn.textContent = '登入';
+            // 💡 修正 2：把 toggleText 改回正確的 toggleBtn
+            toggleBtn.textContent = '還沒有帳號嗎？點此註冊';
+            
+            confirmGroup.style.display = 'none';
+            confirmInput.removeAttribute('required');
+        } else {
+            title.textContent = '✨ 建立新帳號';
+            submitBtn.textContent = '註冊';
+            toggleBtn.textContent = '已經有帳號了？點此登入';
+            
+            confirmGroup.style.display = 'block';
+            confirmInput.setAttribute('required', 'required');
+        }
+        
         alertBox.classList.add('d-none');
     });
 
     // 處理表單送出
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        
+        if (!isLogin) {
+            const pwd = document.getElementById('mainPassword').value;
+            const cpwd = document.getElementById('confirmPassword').value;
+            if (pwd !== cpwd) {
+                alertBox.textContent = "兩次輸入的密碼不一致！";
+                alertBox.className = 'alert alert-danger text-center p-2 mb-3';
+                alertBox.classList.remove('d-none');
+                return; 
+            }
+        }
+
         const formData = new FormData(form);
         const endpoint = isLogin ? '/auth/login' : '/auth/register';
         
@@ -64,24 +101,28 @@
             const response = await fetch(endpoint, { 
                 method: 'POST', 
                 body: formData,
-                // 💡 確保請求會包含憑證資訊 (雖然同源時預設就是包含)
                 credentials: 'include' 
             });
             
             const result = await response.json();
             
             if (response.ok) {
-                // ... (alert 邏輯)
+                alertBox.textContent = isLogin ? "登入成功！導向中..." : "註冊成功！自動登入中...";
+                alertBox.className = 'alert alert-success text-center p-2 mb-3';
+                alertBox.classList.remove('d-none');
+                
                 setTimeout(() => {
-                    // 💡 使用 replace 避免歷史紀錄權限問題
-                    window.location.replace("/"); 
+                    window.location.replace("/");
                 }, 800);
             } else {
-                // ... (錯誤邏輯)
+                alertBox.textContent = result.message || "發生錯誤，請檢查帳號密碼。";
+                alertBox.className = 'alert alert-danger text-center p-2 mb-3';
+                alertBox.classList.remove('d-none');
             }
         } catch (error) {
-            console.error("Fetch 發生錯誤:", error);
-            alertBox.textContent = "系統連線異常，請查看 Console 報錯。";
+            alertBox.textContent = "系統連線異常，請稍後再試。";
+            alertBox.className = 'alert alert-danger text-center p-2 mb-3';
+            alertBox.classList.remove('d-none');
         }
     });
 </script>
