@@ -1,10 +1,16 @@
 from typing import Optional
 from sqlmodel import Field, SQLModel
+from datetime import datetime
 
 class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    email: str = Field(index=True, unique=True)
-    password: str # MVP 簡化，直接存明碼或簡單 Hash，正式版請用 bcrypt
+    email: str = Field(unique=True, index=True)
+    
+    # 💡 新增：用來存放加密後的密碼，絕對不能存明碼！
+    hashed_password: str 
+    
+    is_active: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 class StockMeta(SQLModel, table=True):
     symbol: str = Field(primary_key=True)

@@ -3,6 +3,7 @@ from fastapi.responses import RedirectResponse, JSONResponse
 from sqlmodel import Session, select
 from database import get_session
 from models import UserSchedule
+import re
 
 router = APIRouter(prefix="/schedules")
 
@@ -11,6 +12,14 @@ def add_schedule(
     user_id: int = Form(...), check_time: str = Form(...), 
     frequency: str = Form(...), session: Session = Depends(get_session)
 ):
+    # 💡 增加格式檢查：確保時間必須符合 HH:MM 格式
+    if not re.match(r"^\d{2}:\d{2}$", check_time):
+        return JSONResponse(status_code=400, content={"message": "時間格式不正確！"})
+    
+    # 💡 增加頻率檢查：確保只接受預設的三種字串
+    if frequency not in ["weekday", "weekend", "everyday"]:
+        return JSONResponse(status_code=400, content={"message": "無效的頻率設定！"})
+    
     existing_sched = session.exec(
         select(UserSchedule).where(
             UserSchedule.user_id == user_id,

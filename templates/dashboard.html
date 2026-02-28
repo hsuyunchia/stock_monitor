@@ -13,8 +13,22 @@
 <body class="bg-light">
 
 <div class="container py-3" style="max-width: 600px;">
-    
-    <h5 class="mb-3 fw-bold">🌍 股市狀態 (Market Status)</h5>
+
+    <div class="d-flex justify-content-between align-items-end mt-3 mb-3">
+        <h5 class="mb-0 fw-bold">🌍 股市狀態 (Market Status)</h5>
+        
+        <div class="text-end">
+            {% if user_email %}
+            <div class="text-muted small mb-1" style="font-size: 0.8rem;">
+                Hi, <span class="fw-bold text-dark">{{ user_email }}</span>
+            </div>
+            {% endif %}
+            <a href="/auth/logout" class="btn btn-sm btn-outline-danger rounded-pill px-3" style="font-size: 0.8rem; padding: 0.1rem 0.75rem;">
+                Logout
+            </a>
+        </div>
+    </div>
+
     <div class="row g-2 mb-4" id="market-status-container"></div>
 
     <div class="card mb-4 shadow-sm border-0">
@@ -38,7 +52,8 @@
             </ul>
             
             <form id="addScheduleForm" class="row g-2">
-                <input type="hidden" name="user_id" value="1"> <div class="col-5">
+                <input type="hidden" name="user_id" value="{{ user_id }}"> 
+                <div class="col-5">
                     <div class="form-control p-0 d-flex align-items-center w-100 overflow-hidden">
                         <select id="hourSelect" class="form-select border-0 shadow-none text-center px-1" style="background-image: none; cursor: pointer;" required>
                             <option value="" disabled selected>HH</option>
@@ -110,7 +125,7 @@
             <div id="alertBox" class="alert d-none text-center p-2 mb-3" role="alert"></div>
 
             <form id="addStockForm" class="mb-2">
-                <input type="hidden" name="user_id" value="1">
+                <input type="hidden" name="user_id" value="{{ user_id }}">
                 <input type="hidden" name="symbol" id="realSymbolInput" required>
                 
                 <div class="row g-2 align-items-center">
